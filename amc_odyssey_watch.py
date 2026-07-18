@@ -35,7 +35,7 @@ from datetime import datetime
 # ---------------------------------------------------------------------------
 # CONFIG — change the date/movie here if you want to watch something else.
 # ---------------------------------------------------------------------------
-DATE = "2026-07-18"                       # TEMP TEST DATE (has live 70mm) — revert to 2026-08-14
+DATE = "2026-08-14"                       # Friday, Aug 14 2026
 MOVIE_SLUG = "the-odyssey-80679"          # "The Odyssey – IMAX 70mm Event" at Lincoln Sq
 MOVIE_LABEL = "The Odyssey – IMAX 70mm Event"
 THEATRE = "AMC Lincoln Square 13"
