@@ -1,0 +1,6 @@
+# local-only runtime artifacts — don't ship these to CI
+__pycache__/
+*.pyc
+*.log
+*.html
+FOUND
