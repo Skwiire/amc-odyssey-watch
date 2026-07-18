@@ -79,11 +79,23 @@ def fetch(url: str, timeout: int = 30) -> tuple[int, str]:
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip",
     })
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read()
-        if resp.headers.get("Content-Encoding") == "gzip":
+
+    def _decode(resp_or_err) -> str:
+        raw = resp_or_err.read()
+        if resp_or_err.headers.get("Content-Encoding") == "gzip":
             raw = gzip.GzipFile(fileobj=io.BytesIO(raw)).read()
-        return resp.status, raw.decode("utf-8", errors="ignore")
+        return raw.decode("utf-8", errors="ignore")
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, _decode(resp)
+    except urllib.error.HTTPError as e:
+        # e.g. 429 = Cloudflare 1015 rate limit. Return the code instead of
+        # raising so check() can classify it (and never false-alarm on it).
+        try:
+            return e.code, _decode(e)
+        except Exception:  # noqa: BLE001
+            return e.code, ""
 
 
 def check() -> tuple[bool, list[str], str]:
@@ -93,8 +105,10 @@ def check() -> tuple[bool, list[str], str]:
     """
     status, html = fetch(WATCH_URL)
 
-    # Guard against a Cloudflare challenge / block page — never false-alarm on it.
+    # Guard against Cloudflare rate-limit / challenge pages — never false-alarm.
     low = html.lower()
+    if status == 429 or "error 1015" in low or "you are being rate limited" in low:
+        return False, [], "Cloudflare rate-limited this run (429/1015) — retrying next cycle"
     if status != 200 or "just a moment" in low or "attention required" in low:
         return False, [], f"non-content response (status {status}, possible bot-check)"
 
