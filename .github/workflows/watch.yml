@@ -9,13 +9,19 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Check AMC for Odyssey 70mm tickets
+      - name: Check AMC for Odyssey 70mm tickets (poll ~every 60s)
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: python amc_odyssey_watch.py --once
+        run: |
+          # GitHub's scheduled minimum is 5 min, so each run polls internally
+          # ~every 60s (5 checks per run) → effective ~1/min, continuous.
+          for i in 1 2 3 4 5; do
+            python amc_odyssey_watch.py --once || true
+            [ "$i" -lt 5 ] && sleep 55 || true
+          done
